@@ -1,0 +1,136 @@
+
+name: CMMC Terraform Deployment
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: acme-health-terraform-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.0
+          terraform_wrapper: false
+
+      - name: Configure deployment credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::804450520828:role/cgep-capstone-deploy
+          aws-region: us-east-1
+
+      - name: Terraform Init
+        run: terraform init -input=false
+
+      - name: Terraform Validate
+        run: terraform validate -no-color
+
+      - name: Generate Terraform Plan
+        run: terraform plan -input=false -no-color -out=deploy.tfplan
+
+      - name: Export Terraform Plan JSON
+        run: terraform show -json deploy.tfplan > deploy-plan.json
+
+      - name: Install Conftest
+        run: |
+          curl -fsSL \
+            https://github.com/open-policy-agent/conftest/releases/download/v0.64.0/conftest_0.64.0_Linux_x86_64.tar.gz \
+            -o conftest.tar.gz
+          tar -xzf conftest.tar.gz conftest
+          sudo install conftest /usr/local/bin/conftest
+
+      - name: Enforce CMMC Rego Policies
+        run: |
+          conftest test deploy-plan.json \
+            --policy ../policies/gap01_s3_encryption.rego \
+            --policy ../policies/gap02_dynamodb_encryption.rego \
+            --policy ../policies/gap03_s3_tls.rego \
+            --policy ../policies/gap04_s3_versioning.rego \
+            --policy ../policies/gap05_lambda_vpc.rego \
+            --all-namespaces
+
+      - name: Verify no unexpected infrastructure changes
+        run: |
+          jq -e '([.resource_changes[]? |
+            select(.change.actions != ["no-op"])] | length) == 0' deploy-plan.json
+
+      - name: Terraform Apply
+        run: terraform apply -input=false -no-color deploy.tfplan
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v4.1.2
+
+      - name: Create evidence manifest
+        run: |
+          jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg commit "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg attempt "$GITHUB_RUN_ATTEMPT" \
+            --arg plan_hash "$(sha256sum deploy-plan.json | cut -d ' ' -f1)" \
+            --arg timestamp "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            '{
+              repository: $repo,
+              commit: $commit,
+              run_id: $run_id,
+              run_attempt: $attempt,
+              plan_sha256: $plan_hash,
+              conftest: "passed",
+              terraform_apply: "completed",
+              timestamp: $timestamp
+            }' > evidence-manifest.json
+
+      - name: Sign evidence with Cosign
+        run: |
+          cosign sign-blob evidence-manifest.json \
+            --bundle evidence-manifest.sigstore.json \
+            --yes
+
+      - name: Verify evidence signature
+        run: |
+          cosign verify-blob evidence-manifest.json \
+            --bundle evidence-manifest.sigstore.json \
+            --certificate-identity \
+              "https://github.com/ankojay14-cyber/cgep-app-starter/.github/workflows/terraform-deploy.yml@refs/heads/main" \
+            --certificate-oidc-issuer \
+              "https://token.actions.githubusercontent.com"
+
+      - name: Upload signed evidence to S3
+        run: |
+          BUCKET="acme-health-intake-evidence-896bdc57"
+          PREFIX="ci-evidence/${GITHUB_SHA}/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          aws s3 cp evidence-manifest.json \
+            "s3://${BUCKET}/${PREFIX}/evidence-manifest.json"
+
+          aws s3 cp evidence-manifest.sigstore.json \
+            "s3://${BUCKET}/${PREFIX}/evidence-manifest.sigstore.json"
+
+          aws s3api get-object-retention \
+            --bucket "$BUCKET" \
+            --key "${PREFIX}/evidence-manifest.json"
+
+          aws s3api get-object-retention \
+            --bucket "$BUCKET" \
+            --key "${PREFIX}/evidence-manifest.sigstore.json"
+
