@@ -61,13 +61,14 @@ jobs:
 
       - name: Enforce CMMC Rego Policies
         run: |
+          set -o pipefail
           conftest test deploy-plan.json \
             --policy ../policies/gap01_s3_encryption.rego \
             --policy ../policies/gap02_dynamodb_encryption.rego \
             --policy ../policies/gap03_s3_tls.rego \
             --policy ../policies/gap04_s3_versioning.rego \
             --policy ../policies/gap05_lambda_vpc.rego \
-            --all-namespaces
+            --all-namespaces 2>&1 | tee conftest-results.txt
 
       - name: Verify no unexpected infrastructure changes
         run: |
@@ -100,16 +101,36 @@ jobs:
               timestamp: $timestamp
             }' > evidence-manifest.json
 
+      - name: Package compliance evidence
+        run: |
+          jq '{
+            terraform_version,
+            resource_changes: [
+              .resource_changes[]? |
+              {
+                address: .address,
+                actions: .change.actions
+              }
+            ]
+          }' deploy-plan.json > terraform-plan-summary.json
+
+          tar -czf evidence-bundle.tar.gz \
+            evidence-manifest.json \
+            terraform-plan-summary.json \
+            conftest-results.txt
+
+          sha256sum evidence-bundle.tar.gz > evidence-bundle.tar.gz.sha256
+
       - name: Sign evidence with Cosign
         run: |
-          cosign sign-blob evidence-manifest.json \
-            --bundle evidence-manifest.sigstore.json \
+          cosign sign-blob evidence-bundle.tar.gz \
+            --bundle evidence-bundle.sigstore.json \
             --yes
 
       - name: Verify evidence signature
         run: |
-          cosign verify-blob evidence-manifest.json \
-            --bundle evidence-manifest.sigstore.json \
+          cosign verify-blob evidence-bundle.tar.gz \
+            --bundle evidence-bundle.sigstore.json \
             --certificate-identity \
               "https://github.com/ankojay14-cyber/cgep-app-starter/.github/workflows/terraform-deploy.yml@refs/heads/main" \
             --certificate-oidc-issuer \
@@ -117,20 +138,21 @@ jobs:
 
       - name: Upload signed evidence to S3
         run: |
+          sha256sum -c evidence-bundle.tar.gz.sha256
+
           BUCKET="acme-health-intake-evidence-896bdc57"
           PREFIX="ci-evidence/${GITHUB_SHA}/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
 
-          aws s3 cp evidence-manifest.json \
-            "s3://${BUCKET}/${PREFIX}/evidence-manifest.json"
+          for FILE in \
+            evidence-bundle.tar.gz \
+            evidence-bundle.tar.gz.sha256 \
+            evidence-bundle.sigstore.json
+          do
+            aws s3 cp "$FILE" \
+              "s3://${BUCKET}/${PREFIX}/${FILE}"
 
-          aws s3 cp evidence-manifest.sigstore.json \
-            "s3://${BUCKET}/${PREFIX}/evidence-manifest.sigstore.json"
-
-          aws s3api get-object-retention \
-            --bucket "$BUCKET" \
-            --key "${PREFIX}/evidence-manifest.json"
-
-          aws s3api get-object-retention \
-            --bucket "$BUCKET" \
-            --key "${PREFIX}/evidence-manifest.sigstore.json"
+            aws s3api get-object-retention \
+              --bucket "$BUCKET" \
+              --key "${PREFIX}/${FILE}"
+          done
 
