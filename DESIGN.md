@@ -155,14 +155,20 @@ The capstone will demonstrate:
 8\. A final `WRITEUP.md` documenting design decisions, control coverage, limitations, and trade-offs.
 
 
+## 8. Current Progress
 
-\## 8. Current Progress
+The Acme Health Patient Intake API has been successfully deployed and tested in AWS using synthetic data.
 
+The capstone's four technical layers have been implemented:
 
+- **Terraform:** Customer-managed KMS encryption, security hardening, CloudTrail, and an S3 evidence vault with Object Lock.
+- **Policy as Code:** Five CMMC-mapped Rego policies with passing and failing tests.
+- **CI/CD:** An integrated GitHub Actions workflow performing Terraform planning, Conftest validation, Apply, Cosign signing, and evidence upload.
+- **OSCAL:** Validated component definition and CMMC Level 2 control profile.
 
-The original starter application has been successfully deployed in AWS, and a synthetic API submission returned `"status": "received"`.
+The project also demonstrated a successful pull request and a blocked insecure pull request.
 
+Signed evidence was independently verified using SHA-256, Cosign, and S3 Object Lock retention checks.
 
-
-Infrastructure hardening, automated policy validation, evidence integration, and OSCAL implementation remain in progress.
+Remaining limitations and future improvements are documented in `WRITEUP.md`.
 
