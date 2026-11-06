@@ -1,0 +1,30 @@
+
+{
+  "profile": {
+    "uuid": "95a02a5b-c8c2-4a19-93e0-78bd0acb31f6",
+    "metadata": {
+      "title": "Acme Health CMMC Level 2 Minimum Control Profile",
+      "last-modified": "2026-11-05T23:45:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2"
+    },
+    "imports": [
+      {
+        "href": "https://raw.githubusercontent.com/grcwarlock/oscal-catalog-library/ea49c4c05c8c62098b3766fd8f26b862fb5181f4/cmmc-oscal/catalog/catalog.json",
+        "include-controls": [
+          {
+            "with-ids": [
+              "sc-l2-3-13-11",
+              "sc-l2-3-13-8",
+              "mp-l2-3-8-9",
+              "sc-l2-3-13-1"
+            ]
+          }
+        ]
+      }
+    ],
+    "merge": {
+      "as-is": true
+    }
+  }
+}
