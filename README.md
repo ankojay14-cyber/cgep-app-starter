@@ -29,16 +29,16 @@ The OPA test suite passed 23 of 23 tests during development.
 
 ## Signed Evidence
 
-[Successful GitHub Actions Evidence Run](https://github.com/ankojay14-cyber/cgep-app-starter/actions/runs/42122881135)
+[Successful Integrated CMMC GRC Gate Run](https://github.com/ankojay14-cyber/cgep-app-starter/actions/runs/42153405575)
 
 - **AWS Region:** `us-east-1`
 - **Evidence bucket:** `acme-health-intake-evidence-896bdc57`
-- **Workflow run:** `42122881135`
+- **Workflow run:** `42153405575`
 - **Retention:** S3 Object Lock GOVERNANCE, 30 days
 
 Evidence prefix:
 
-`ci-evidence/27f2a19ed65d1983eb038f25621852ea5fabff32/42122881135-1/`
+ci-evidence/97eff0fa2d3fa5e28b9cf5724050509b4430a58c/42153405575-1/
 
 ## Grader Verification
 
@@ -63,12 +63,10 @@ Using authorized AWS credentials, retrieve the three evidence objects from the S
 - `evidence-bundle.tar.gz.sha256`
 - `evidence-bundle.sigstore.json`
 
-Recompute the SHA-256 checksum, verify the Cosign signature and Sigstore transparency record, and inspect the S3 Object Lock retention settings.
-
-The signed bundle was successfully verified during GitHub Actions run `42122881135`. Independent verification is a final submission check.
+The evidence archive was independently downloaded from S3. SHA-256 checksum verification and Cosign signature verification both passed. S3 Object Lock GOVERNANCE retention was independently confirmed for all three evidence objects through December 6, 2026.
 
 ## Known Limitations
 
-The existing repository uses separate validation and deployment workflows, and its deployment safeguard currently permits only no-change Terraform plans. These limitations, together with incomplete GAP-06 and GAP-08 remediation, are documented in [WRITEUP.md](WRITEUP.md).
+The integrated .github/workflows/grc-gate.yml performs pull-request policy validation and executes Plan → Policy Check → Apply → Sign → Upload on pushes to main. The workflow successfully applied a no-change Terraform plan, but deployment of a new infrastructure change through CI has not yet been demonstrated. GAP-06 and GAP-08 remain partially remediated, as documented in WRITEUP.md.
 
 The project demonstrates supporting CMMC-mapped technical controls and does not claim CMMC certification or complete regulatory compliance.
