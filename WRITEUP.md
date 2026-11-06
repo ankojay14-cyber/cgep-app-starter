@@ -115,17 +115,19 @@ The archive, checksum, and Sigstore bundle are uploaded to the S3 evidence vault
 
 ### Verified Deployment Evidence
 
-GitHub Actions — Integrated CMMC GRC Gate
-Evidence attribute	Verified value
-GitHub Actions run ID	42153405575
-Merge commit	97eff0fa2d3fa5e28b9cf5724050509b4430a58c
-Evidence bucket	acme-health-intake-evidence-896bdc57
-Object Lock mode	GOVERNANCE
-Retention through	December 6, 2026
-SHA-256 verification	Independently passed
-Cosign and Sigstore verification	Independently passed
-Evidence upload	Successful
-S3 retention verification	Confirmed for all three files
+[GitHub Actions — Integrated CMMC GRC Gate](https://github.com/ankojay14-cyber/cgep-app-starter/actions/runs/42153405575)
+
+| Evidence attribute | Verified value |
+|---|---|
+| GitHub Actions run ID | `42153405575` |
+| Merge commit | `97eff0fa2d3fa5e28b9cf5724050509b4430a58c` |
+| Evidence bucket | `acme-health-intake-evidence-896bdc57` |
+| Object Lock mode | GOVERNANCE |
+| Retention through | December 6, 2026 |
+| SHA-256 verification | Independently passed |
+| Cosign and Sigstore verification | Independently passed |
+| Evidence upload | Successful |
+| S3 retention verification | Confirmed for all three files |
 
 Evidence S3 prefix:
 
