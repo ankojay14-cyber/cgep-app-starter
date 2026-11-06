@@ -1,0 +1,83 @@
+{
+  "component-definition": {
+    "uuid": "84169b2b-fe4c-40c4-bf90-08c97b5de213",
+    "metadata": {
+      "title": "Acme Health CMMC Level 2 Security Component",
+      "last-modified": "2026-11-05T22:58:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2"
+    },
+    "components": [
+      {
+        "uuid": "70e2acc8-304b-4b08-b0cd-28ba67562e31",
+        "type": "software",
+        "title": "Acme Health Governed Patient Intake API",
+        "description": "AWS API Gateway, Lambda, DynamoDB, and S3 workload secured with Terraform and evaluated using five CMMC Level 2 Rego policies.",
+        "purpose": "Document implemented technical safeguards and their compliance evidence.",
+        "control-implementations": [
+          {
+            "uuid": "80643db9-61f2-4074-8e3c-7cc5b5a31797",
+            "source": "https://raw.githubusercontent.com/grcwarlock/oscal-catalog-library/ea49c4c05c8c62098b3766fd8f26b862fb5181f4/cmmc-oscal/catalog/catalog.json",
+            "description": "Technical implementation mappings to the CMMC Level 2 catalog based on NIST SP 800-171 Rev. 2. Technical safeguards are partial contributions and do not establish complete practice satisfaction or certification.",
+            "implemented-requirements": [
+              {
+                "uuid": "dcb2b408-81e9-4cb4-9cdc-e7668494104b",
+                "control-id": "sc-l2-3-13-11",
+                "description": "GAP-01 and GAP-02: The uploads S3 bucket and DynamoDB intake table use customer-managed AWS KMS encryption. KMS key rotation is enabled. These safeguards support cryptographic protection but do not alone establish full CMMC FIPS-validated cryptography compliance.",
+                "props": [
+                  {"name": "cmmc-practice", "value": "SC.L2-3.13.11"},
+                  {"name": "terraform-resource", "value": "aws_kms_key.grc"},
+                  {"name": "terraform-resource", "value": "aws_s3_bucket_server_side_encryption_configuration.uploads"},
+                  {"name": "terraform-resource", "value": "aws_dynamodb_table.intake"}
+                ],
+                "links": [
+                  {"rel": "evidence", "href": "s3://acme-health-intake-evidence-896bdc57/ci-evidence/27f2a19ed65d1983eb038f25621852ea5fabff32/42122881135-1/evidence-bundle.tar.gz"}
+                ]
+              },
+              {
+                "uuid": "c301f928-e7ed-4d08-bfa0-aa56c1783f62",
+                "control-id": "sc-l2-3-13-8",
+                "description": "GAP-03: An S3 bucket policy explicitly denies insecure transport to the uploads bucket. This supports transmission protection for the uploads storage interface.",
+                "props": [
+                  {"name": "cmmc-practice", "value": "SC.L2-3.13.8"},
+                  {"name": "terraform-resource", "value": "aws_s3_bucket_policy.uploads_tls"}
+                ],
+                "links": [
+                  {"rel": "evidence", "href": "s3://acme-health-intake-evidence-896bdc57/ci-evidence/27f2a19ed65d1983eb038f25621852ea5fabff32/42122881135-1/evidence-bundle.tar.gz"}
+                ]
+              },
+              {
+                "uuid": "23c1110e-8a48-453a-8c59-06aee7c2a846",
+                "control-id": "mp-l2-3-8-9",
+                "description": "GAP-04: S3 versioning is enabled for the uploads bucket, supporting recovery from overwrites. Versioning alone does not satisfy the full requirement to protect the confidentiality of backup CUI.",
+                "props": [
+                  {"name": "cmmc-practice", "value": "MP.L2-3.8.9"},
+                  {"name": "terraform-resource", "value": "aws_s3_bucket_versioning.uploads"},
+                  {"name": "implementation-status", "value": "partial"}
+                ],
+                "links": [
+                  {"rel": "evidence", "href": "s3://acme-health-intake-evidence-896bdc57/ci-evidence/27f2a19ed65d1983eb038f25621852ea5fabff32/42122881135-1/evidence-bundle.tar.gz"}
+                ]
+              },
+              {
+                "uuid": "5a54a9f0-8e49-4e6f-ac4f-0ffa7a3f0032",
+                "control-id": "sc-l2-3-13-1",
+                "description": "GAP-05: The intake Lambda is attached to private subnets in the existing VPC and uses a designated security group. S3 and DynamoDB VPC endpoints provide private AWS service connectivity. These are supporting technical safeguards, not a complete boundary-protection assessment.",
+                "props": [
+                  {"name": "cmmc-practice", "value": "SC.L2-3.13.1"},
+                  {"name": "terraform-resource", "value": "aws_lambda_function.intake"},
+                  {"name": "terraform-resource", "value": "aws_security_group.lambda"},
+                  {"name": "terraform-resource", "value": "aws_vpc_endpoint.s3"},
+                  {"name": "terraform-resource", "value": "aws_vpc_endpoint.dynamodb"}
+                ],
+                "links": [
+                  {"rel": "evidence", "href": "s3://acme-health-intake-evidence-896bdc57/ci-evidence/27f2a19ed65d1983eb038f25621852ea5fabff32/42122881135-1/evidence-bundle.tar.gz"}
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
